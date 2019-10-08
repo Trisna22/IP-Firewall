@@ -148,7 +148,27 @@ LRESULT CALLBACK GraphicalUserInterface::MainWindowProcess(HWND hwnd, UINT msg, 
 		}
 		if (LOWORD(wParam) == BUTTON_FWSWITCH && HIWORD(wParam) == BN_CLICKED)
 		{
-			MessageBoxA(NULL, "Start firewall", "IF: Warning", MB_OK | MB_ICONWARNING);
+			if (firewall.IsFirewallRunning == false)
+			{
+				if (firewall.StartFirewall() == false)
+					MessageBox(0, "Failed to start the firewall!", "IF: Error", MB_OK | MB_ICONERROR);
+				else
+				{
+					SetWindowText(GetDlgItem(hwnd, BUTTON_FWSWITCH), "Stop Firewall");
+					SetWindowText(GetDlgItem(hwnd, LABEL_STATUS2), "Firewall online");
+				}
+			}
+			else
+			{
+				if (firewall.StopFirewall() == false)
+					MessageBox(0, "Failed to stop the firewall!", "IF: Error", MB_OK | MB_ICONERROR);
+				else
+				{
+					SetWindowText(GetDlgItem(hwnd, BUTTON_FWSWITCH), "Start Firewall");
+					SetWindowText(GetDlgItem(hwnd, LABEL_STATUS2), "Firewall offline");
+					MessageBox(0, "IP Firewall stopped!\n(No recommended!)", "IF: Info", MB_OK | MB_ICONINFORMATION);
+				}
+			}
 			break;
 		}
 
@@ -224,6 +244,7 @@ LRESULT CALLBACK GraphicalUserInterface::MainWindowProcess(HWND hwnd, UINT msg, 
 	}
 	case WM_CLOSE:
 	{
+		firewall.StopFirewall();
 		DestroyWindow(hwnd);
 		break;
 	}

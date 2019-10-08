@@ -104,10 +104,10 @@ string XMLReader::RetrieveIP(int count)
 
 	string searchString = "<IP>";
 	string line;
+	int row = 0;
 	while (getline(XMLFile, line))
 	{
-		int row = 0;
-		if (row == count)
+		if (row == count && line.find("<IP>") != string::npos && line.find("</IP>") != string::npos)
 		{
 			XMLFile.close();
 			string a = line.substr(4);
