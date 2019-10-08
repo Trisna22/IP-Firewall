@@ -16,4 +16,4 @@ link to the WFP page: https://docs.microsoft.com/en-us/windows/win32/fwp/windows
 This program is created by Trisna Quebe.
 
 
-(c) 2019-2020 Trisna Quebe aLl rights reserved
+(c) 2019-2020 Trisna Quebe all rights reserved
