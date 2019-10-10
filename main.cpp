@@ -64,7 +64,6 @@ BOOL RetrieveAdminCreds()
 		MessageBoxA(NULL, "Failed to retrieve path to program!", "IPS: Error", MB_OK | MB_ICONERROR);
 		return FALSE;
 	}
-	return TRUE;
 }
 BOOL IsProgramAlreadyRunning(int PID)
 {

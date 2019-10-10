@@ -17,7 +17,7 @@ class IPFirewall
 public:
 	IPFirewall();
 	~IPFirewall();
-	BOOL StartFirewall();
+	BOOL StartFirewall(HWND);
 	BOOL InitializeFirewall();
 	BOOL StopFirewall();
 	bool IsFirewallReady();
@@ -25,6 +25,7 @@ public:
 	bool IsFirewallRunning = false;
 	string WIFI_SSID = WLAN_ERROR;
 	string WIFI_MAC = WLAN_ERROR;
+	vector <string>IP_LIST;
 
 private:
 	bool IsReady = false;
@@ -40,7 +41,6 @@ private:
 	HANDLE m_hEngineHandle;
 	GUID m_subLayerGUID;
 
-	vector <string>IP_LIST;
 
 	bool GotPermissions();
 	string RetrieveConnectedWifiSSID();
@@ -117,7 +117,7 @@ IPFirewall::~IPFirewall()
 }
 
 /*   Starts firewall blocking IP addresses.   */
-BOOL IPFirewall::StartFirewall()
+BOOL IPFirewall::StartFirewall(HWND Listview)
 {
 	if (GotPermissions() == false)
 	{
@@ -138,6 +138,8 @@ BOOL IPFirewall::StartFirewall()
 			MessageBox(0, "XMLReader failed to open!", "IF: Error", MB_OK | MB_ICONERROR);
 			return false;
 		}
+
+		IP_LIST.clear();
 
 		//	List trough IP addresses and add them to the list.
 		for (int i = 0; i < reader.RetrieveIPAddressesInFile(); i++)
@@ -162,6 +164,10 @@ BOOL IPFirewall::StartFirewall()
 			AddRemove_Filter(TRUE);
 			IsFirewallRunning = true;
 			bStarted = TRUE;
+
+			SendMessage(Listview, LB_RESETCONTENT, 0, 0);
+			for (int i = 0; i < IP_LIST.size(); i++)
+				SendMessage(Listview, LB_ADDSTRING, 0, (LPARAM)IP_LIST.at(i).c_str());
 		}
 		else
 		{

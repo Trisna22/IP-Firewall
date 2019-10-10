@@ -44,7 +44,6 @@ XMLWriter::XMLWriter(string FileName)
 			return;
 		}
 	}
-	MessageBox(0, "Good", "INFO", MB_OK);
 	GoodToGo = true;
 }
 

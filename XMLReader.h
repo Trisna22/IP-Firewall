@@ -19,6 +19,7 @@ public:
 	bool IsReady();
 	int RetrieveIPAddressesInFile();
 	string RetrieveIP(int);
+	bool CheckIPInList(string);
 private:
 	bool IsGoodToGo = false;
 	ifstream XMLFile;
@@ -78,12 +79,11 @@ int XMLReader::RetrieveIPAddressesInFile()
 	}
 
 	int count = 0;
-	string searchString = "<IP>";
 	string line;
 	while (getline(XMLFile, line))
 	{
 		//	Count the <IP> elements inside the <WIFI> element
-		if (line.find(searchString) != string::npos)
+		if (line.find("<IP>") != string::npos && line.find("</IP>") != string::npos)
 			count++;
 	}
 	XMLFile.close();
@@ -119,4 +119,31 @@ string XMLReader::RetrieveIP(int count)
 	}
 	XMLFile.close();
 	return "IP_NOT_FOUND";
+}
+
+/*   Checks if IP already exists in list.   */
+bool XMLReader::CheckIPInList(string IP)
+{
+	XMLFile.open(FileName.c_str(), ios::beg);
+	if (!XMLFile.is_open())
+	{
+		stringstream ss;
+		ss << "Failed to open file! Error code: " << errno << endl;
+		MessageBoxA(NULL, ss.str().c_str(), "IPS: Error", MB_OK | MB_ICONERROR);
+		return false;
+	}
+
+	string line;
+	string searchString = "<IP>" + IP + "</IP>";
+	while (getline(XMLFile, line))
+	{
+		if (line.find(searchString) != string::npos)
+		{
+			XMLFile.close();
+			return true;
+		}
+	}
+
+	XMLFile.close();
+	return false;
 }
