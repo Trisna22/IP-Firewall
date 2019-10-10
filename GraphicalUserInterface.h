@@ -23,6 +23,8 @@ namespace GraphicalUserInterface
 	LRESULT CustomDrawListview(NMLVCUSTOMDRAW*, LPARAM, HWND);
 	void GiveButtonColor(LPNMCUSTOMDRAW, COLORREF, COLORREF);
 	HBRUSH CreateGradientBrush(COLORREF, COLORREF, LPNMCUSTOMDRAW);
+
+	void AddRulesToListbox(HWND);
 }
 
 /*   Creating windows by registering and call the CreateWindow function.   */
@@ -148,7 +150,7 @@ void GraphicalUserInterface::InitializeWindowComponents(HWND hwndParent)
 
 	HWND button4 = CreateWindow("BUTTON", "Copyrights software",
 		WS_CHILD | WS_VISIBLE | WS_SYSMENU | SS_LEFT,
-		550, 450, 200, 30,
+		550, 550, 200, 30,
 		hwndParent, (HMENU)BUTTON_COPYRIGHTS, hInstance, 0);
 	SendMessage(button4, WM_SETFONT, (WPARAM)defaultFont, (LPARAM)TRUE);
 }
@@ -167,27 +169,7 @@ LRESULT CALLBACK GraphicalUserInterface::MainWindowProcess(HWND hwnd, UINT msg, 
 	case WM_NCCREATE:
 	{
 
-		string env = getenv("ProgramFiles");
-		string path = env + "\\IP Firewall\\Profile_" + firewall.WIFI_SSID + ".config";
-
-		XMLReader reader(path);
-		if (!reader.IsReady())
-		{
-			string msg = "Failed to open the configuration file for this wifi setting! Error code: " + to_string(GetLastError());
-			MessageBox(0, msg.c_str(), "IF: Error", MB_OK | MB_ICONERROR);
-			break;
-		}
-
-		//	List trough IP addresses and add them to the list.
-		for (int i = 0; i < reader.RetrieveIPAddressesInFile(); i++)
-		{
-			string IP = reader.RetrieveIP(i);
-			if (IP == "IP_NOT_FOUND")
-				continue;
-
-			SendMessage(GetDlgItem(hwnd, LISTVIEW_IP), LB_ADDSTRING, 0, (LPARAM)IP.c_str());
-		}
-
+		AddRulesToListbox(hwnd);
 		break;
 	}
 	case WM_COMMAND:
@@ -200,7 +182,7 @@ LRESULT CALLBACK GraphicalUserInterface::MainWindowProcess(HWND hwnd, UINT msg, 
 			RuleHandler handler(path);
 			if (!handler.IsReady())
 			{
-				MessageBox(0, "RuleHandler not ready!", "IF: Warning", MB_OK | MB_ICONERROR);
+				MessageBox(0, "Failed to add IP, RuleHandler not ready!", "IF: Warning", MB_OK | MB_ICONERROR);
 				break;
 			}
 
@@ -208,9 +190,40 @@ LRESULT CALLBACK GraphicalUserInterface::MainWindowProcess(HWND hwnd, UINT msg, 
 
 			if (handler.AddRule(IP) == true)
 			{
+				SetWindowText(GetDlgItem(hwnd, INPUT_IPADDR), "");
 				MessageBox(0, "IP succesfully added to list!", "IF: Warning", MB_OK | MB_ICONWARNING);
 			}
 
+			AddRulesToListbox(hwnd);
+
+			break;
+		}
+		if (LOWORD(wParam) == BUTTON_DELETERULE && HIWORD(wParam) == BN_CLICKED)
+		{
+			string env = getenv("ProgramFiles");
+			string path = env + "\\IP Firewall\\Profile_" + firewall.WIFI_SSID + ".config";
+
+			RuleHandler handler(path);
+			if (!handler.IsReady())
+			{
+				MessageBox(0, "Failed to delete rule, RuleHandler not ready!", "IF: Error", MB_OK | MB_ICONERROR);
+				break;
+			}
+
+			string IP = GetText(GetDlgItem(hwnd, LABEL_SELECTEDIP));
+
+			if (handler.DeleteRule(IP) == false)
+			{
+				MessageBox(0, "Failed to delete the selected IP address!", "IF: Warning", MB_OK | MB_ICONWARNING);
+			}
+			else
+			{
+				SetWindowText(GetDlgItem(hwnd, LABEL_SELECTEDIP), "                              ");
+				SetWindowText(GetDlgItem(hwnd, LABEL_SELECTEDIP), "NONE_SELECTED");
+				MessageBox(0, "Succesfully deleted the selected IP address!", "IF: Warning", MB_OK | MB_ICONINFORMATION);
+			}
+			
+			AddRulesToListbox(hwnd);
 			break;
 		}
 		if (LOWORD(wParam) == BUTTON_FWSWITCH && HIWORD(wParam) == BN_CLICKED)
@@ -238,17 +251,26 @@ LRESULT CALLBACK GraphicalUserInterface::MainWindowProcess(HWND hwnd, UINT msg, 
 			}
 			break;
 		}
-		if (LOWORD(wParam) == BUTTON_DELETERULE && HIWORD(wParam) == BN_CLICKED)
-		{
-			MessageBox(0, "Delete IP address!", "IF: Info", MB_OK | MB_ICONWARNING);
-			break;
-		}
 		if (LOWORD(wParam) == BUTTON_COPYRIGHTS && HIWORD(wParam) == BN_CLICKED)
 		{
 			MessageBox(hwnd, "Project name:\t\t\tIP Firewall\n"
 				"Author:\t\t\t\tTrisna Quebe\n"
 				"Creation date:\t\t\t7-10-2019\n\n"
 				"Copyrights (c) 2019-2020 Trisna Quebe all rights served.", "IF: Copyrights", MB_OK | MB_ICONWARNING);
+			break;
+		}
+		if (LOWORD(wParam) == LISTVIEW_IP && HIWORD(wParam) == LBN_SELCHANGE)
+		{
+			int ItemPosition = (int)SendMessage(GetDlgItem(hwnd, LISTVIEW_IP), LB_GETCURSEL, 0, 0);
+
+			int ItemLength = (int)SendMessage(GetDlgItem(hwnd, LISTVIEW_IP), LB_GETTEXTLEN, ItemPosition, 0);
+
+			char *buffer = new char[ItemLength];
+			SendMessage(GetDlgItem(hwnd, LISTVIEW_IP), LB_GETTEXT, (WPARAM)ItemPosition, (LPARAM)buffer);
+
+			string str = buffer;
+			SetWindowText(GetDlgItem(hwnd, LABEL_SELECTEDIP), "                              ");
+			SetWindowText(GetDlgItem(hwnd, LABEL_SELECTEDIP), str.c_str());
 			break;
 		}
 		break;
@@ -466,4 +488,31 @@ HBRUSH GraphicalUserInterface::CreateGradientBrush(COLORREF top, COLORREF bottom
 	DeleteObject(hbitmap);
 
 	return pattern;
+}
+
+/*   Adds the rules in the .config files to the listbox.   */
+void GraphicalUserInterface::AddRulesToListbox(HWND hwnd)
+{
+	SendMessage(GetDlgItem(hwnd, LISTVIEW_IP), LB_RESETCONTENT, 0, 0);
+
+	string env = getenv("ProgramFiles");
+	string path = env + "\\IP Firewall\\Profile_" + firewall.WIFI_SSID + ".config";
+
+	XMLReader reader(path);
+	if (!reader.IsReady())
+	{
+		string msg = "Failed to open the configuration file for this wifi setting! Error code: " + to_string(GetLastError());
+		MessageBox(0, msg.c_str(), "IF: Error", MB_OK | MB_ICONERROR);
+		return;
+	}
+
+	//	List trough IP addresses and add them to the list.
+	for (int i = 0; i < reader.RetrieveIPAddressesInFile(); i++)
+	{
+		string IP = reader.RetrieveIP(i);
+		if (IP == "IP_NOT_FOUND")
+			continue;
+
+		SendMessage(GetDlgItem(hwnd, LISTVIEW_IP), LB_ADDSTRING, 0, (LPARAM)IP.c_str());
+	}
 }

@@ -114,8 +114,10 @@ string XMLReader::RetrieveIP(int count)
 			string ip = a.substr(0, a.find_first_of("<"));
 			return ip;
 		}
-		else
+		else if (line.find("<IP>") != string::npos && line.find("</IP>") != string::npos)
 			row++;
+		else
+			continue;
 	}
 	XMLFile.close();
 	return "IP_NOT_FOUND";

@@ -44,6 +44,7 @@ XMLWriter::XMLWriter(string FileName)
 			return;
 		}
 	}
+
 	GoodToGo = true;
 }
 

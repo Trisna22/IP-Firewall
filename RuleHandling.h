@@ -13,9 +13,11 @@ class RuleHandler
 public:
 	RuleHandler(string);
 	bool AddRule(string);
+	bool DeleteRule(string);
 	bool IsReady();
 private:
 	string FileName = "NO_FILE";
+	string TempFile = "NO_FILE";
 	bool IsGoodToGo = false;
 	bool IsIPAddress(string);
 };
@@ -32,6 +34,7 @@ RuleHandler::RuleHandler(string fileName)
 	}
 
 	this->FileName = fileName;
+	this->TempFile = fileName + ".2";
 	IsGoodToGo = true;
 }
 
@@ -83,6 +86,36 @@ bool RuleHandler::AddRule(string IP)
 	writer.CloseXMLFile();
 	return true;
 }
+
+/*   Deletes IP element from file.   */
+bool RuleHandler::DeleteRule(string IP)
+{
+	ifstream reader(this->FileName, ios::beg);
+	ofstream output(this->TempFile, ios::trunc);
+
+	string line;
+	string searchData = "<IP>" + IP + "</IP>";
+	bool FileDeleted = false;
+
+	while (getline(reader, line))
+	{
+		if (line.find(searchData) != string::npos)
+		{
+			FileDeleted = true;
+			continue;
+		}
+		else
+			output << line << endl;
+	}
+
+	reader.close();
+	output.close();
+
+	MoveFileEx(this->TempFile.c_str(), this->FileName.c_str(), MOVEFILE_REPLACE_EXISTING);
+
+	return FileDeleted;
+}
+
 
 /*   Checks if string is IP address.   */
 bool RuleHandler::IsIPAddress(string IP)
